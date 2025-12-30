@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>豬豬存錢計畫 | 鹹魚翻身</title>
+    <style>
+        :root {
+            --bg-color: #fdf2ff; /* 夢幻粉紫 */
+            --main-purple: #c5a3ff;
+            --dark-purple: #7e57c2;
+            --white: #ffffff;
+            --text-color: #5e548e;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            margin: 0; padding: 20px;
+            display: flex; flex-direction: column; align-items: center;
+            color: var(--text-color);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .container { width: 100%; max-width: 800px; text-align: center; }
+
+        /* 整合後的豬豬圖案 */
+        .piggy-container {
+            position: relative;
+            width: 100px; height: 100px;
+            margin: 0 auto 10px;
+        }
+        .pig-body { font-size: 65px; position: absolute; top: 10px; left: 10px; z-index: 1; }
+        .money-bag { font-size: 35px; position: absolute; bottom: 5px; right: 5px; z-index: 2; }
+        
+        h1 { color: var(--dark-purple); margin: 0 0 20px 0; font-size: 26px; letter-spacing: 1px; }
+
+        /* 看板區 */
+        .dashboard {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 12px; margin-bottom: 20px;
+        }
+        .stat-card {
+            background: var(--white); padding: 15px; border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(197, 163, 255, 0.2);
+        }
+        .stat-label { font-size: 12px; color: #a18cd1; display: block; margin-bottom: 5px; }
+        .stat-value { font-size: 1.2rem; font-weight: bold; color: var(--dark-purple); }
+
+        /* 進度條 */
+        .progress-box {
+            background: white; padding: 18px; border-radius: 20px; margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .progress-info { display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; }
+        .bar-bg { background: #eee; height: 16px; border-radius: 10px; overflow: hidden; margin-top: 10px; }
+        .bar-fill { 
+            background: linear-gradient(90deg, #d1c4e9, var(--main-purple)); 
+            height: 100%; width: 0%; transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); 
+        }
+
+        /* 額外記帳區 */
+        .extra-area {
+            background: white; padding: 20px; border-radius: 20px; margin-bottom: 25px;
+            border: 2px dashed var(--main-purple);
+        }
+        input { 
+            padding: 10px; border-radius: 10px; border: 1px solid #ddd; 
+            width: 90px; font-size: 16px; outline: none; text-align: center;
+        }
+        .btn-add { 
+            background: var(--main-purple); color: white; border: none; 
+            padding: 10px 20px; border-radius: 10px; cursor: pointer; 
+            font-weight: bold; margin-left: 8px; transition: opacity 0.2s;
+        }
+        .btn-add:active { opacity: 0.7; }
+
+        /* 365天網格 */
+        #grid {
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
+            gap: 10px; width: 100%; padding-bottom: 50px;
+        }
+        .cell {
+            background: white; padding: 12px 0; border-radius: 12px; 
+            border: 1.5px solid #e1bee7; cursor: pointer; transition: transform 0.1s; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .cell:active { transform: scale(0.85); background: #fdf2ff; }
+        .cell.done { background-color: var(--main-purple); color: white; border-color: var(--dark-purple); }
+        .d-tag { font-size: 10px; color: #b39ddb; margin-bottom: 2px; }
+        .cell.done .d-tag { color: #f3e5f5; }
+        .amt { font-size: 16px; font-weight: bold; }
+
+        /* 彈窗 */
+        .overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 999;
+            justify-content: center; align-items: center;
+        }
+        .modal { 
+            background: white; padding: 30px; border-radius: 25px; 
+            width: 280px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .btn-m { padding: 12px 20px; border-radius: 12px; border: none; cursor: pointer; font-weight: bold; width: 100px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="piggy-container">
+        <div class="pig-body">🐷</div>
+        <div class="money-bag">💰</div>
+    </div>
+
+    <h1>✨ 鹹魚翻身計畫 ✨</h1>
+
+    <div class="dashboard">
+        <div class="stat-card">
+            <span class="stat-label">達成率</span>
+            <div id="percent" class="stat-value">0%</div>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">金庫總額</span>
+            <div class="stat-value">$<span id="total">0</span></div>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">已存天數</span>
+            <div id="days" class="stat-value">0</div>
+        </div>
+    </div>
+
+    <div class="progress-box">
+        <div class="progress-info">
+            <span>翻身進度...</span>
+            <span id="progLabel">0 / 365</span>
+        </div>
+        <div class="bar-bg"><div id="fill" class="bar-fill"></div></div>
+    </div>
+
+    <div class="extra-area">
+        <strong>🦴 額外加碼記帳</strong>
+        <input type="number" id="exInput" placeholder="金額" inputmode="numeric">
+        <button onclick="addExtra()" class="btn-add">存入</button>
+    </div>
+
+    <div id="grid"></div>
+</div>
+
+<div class="overlay" id="overlay">
+    <div class="modal">
+        <div style="font-size:45px; margin-bottom: 10px;">🧧</div>
+        <h3 style="margin:0">存款確認</h3>
+        <p id="mMsg" style="color:#666; margin: 15px 0; font-size: 15px;"></p>
+        <div style="display:flex; gap:10px; justify-content:center;">
+            <button onclick="confirmAction()" class="btn-m" style="background:var(--main-purple); color:white;">確定</button>
+            <button onclick="closeModal()" class="btn-m" style="background:#eee;">取消</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 使用專屬 GitHub 版本標籤，確保資料儲存獨立
+    const DB_DAYS = 'piggy_gh_days_final';
+    const DB_EXTRA = 'piggy_gh_extra_final';
+
+    let myData = {
+        days: JSON.parse(localStorage.getItem(DB_DAYS)) || [],
+        extra: JSON.parse(localStorage.getItem(DB_EXTRA)) || 0
+    };
+    let activeDay = null;
+
+    function renderGrid() {
+        const gridBox = document.getElementById('grid');
+        let htmlContent = '';
+        
+        for (let i = 1; i <= 365; i++) {
+            const isDone = myData.days.includes(i);
+            htmlContent += `
+                <div class="cell ${isDone ? 'done' : ''}" onclick="handleCellClick(${i})">
+                    <span class="d-tag">D-${i}</span>
+                    <span class="amt">${isDone ? '🐾' : i}</span>
+                </div>
+            `;
+        }
+        gridBox.innerHTML = htmlContent;
+        updateUI();
+    }
+
+    function handleCellClick(day) {
+        activeDay = day;
+        const isDone = myData.days.includes(day);
+        document.getElementById('mMsg').innerText = isDone ? `要刪除 D-${day} 的紀錄嗎？` : `要在 D-${day} 存入 ${day} 元嗎？`;
+        document.getElementById('overlay').style.display = 'flex';
+    }
+
+    function confirmAction() {
+        const idx = myData.days.indexOf(activeDay);
+        if (idx > -1) {
+            myData.days.splice(idx, 1);
+        } else {
+            myData.days.push(activeDay);
+        }
+        saveAndReload();
+        closeModal();
+    }
+
+    function closeModal() {
+        document.getElementById('overlay').style.display = 'none';
+    }
+
+    function addExtra() {
+        const input = document.getElementById('exInput');
+        const val = parseInt(input.value);
+        if (!isNaN(val) && val > 0) {
+            myData.extra += val;
+            input.value = '';
+            saveAndReload();
+        }
+    }
+
+    function saveAndReload() {
+        localStorage.setItem(DB_DAYS, JSON.stringify(myData.days));
+        localStorage.setItem(DB_EXTRA, JSON.stringify(myData.extra));
+        renderGrid();
+    }
+
+    function updateUI() {
+        const gridTotal = myData.days.reduce((a, b) => a + b, 0);
+        const total = gridTotal + myData.extra;
+        const count = myData.days.length;
+        const percent = ((count / 365) * 100).toFixed(1) + '%';
+        
+        document.getElementById('total').innerText = total.toLocaleString();
+        document.getElementById('days').innerText = count;
+        document.getElementById('percent').innerText = percent;
+        document.getElementById('progLabel').innerText = count + ' / 365';
+        document.getElementById('fill').style.width = percent;
+    }
+
+    // 確保頁面載入完成後執行
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', renderGrid);
+    } else {
+        renderGrid();
+    }
+</script>
+</body>
+</html>
